@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Get Location</title>
+</head>
+<body>
+  <h1>User Location</h1>
+  <button id="getLocationBtn">Get Location</button>
+
+  <div id="locationDisplay">
+    <p>IP Address: <span id="ipAddress"></span></p>
+    <p>Latitude: <span id="latitude"></span></p>
+    <p>Longitude: <span id="longitude"></span></p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script>
+    // Function to get the user's IP address using ipify API
+    const getIpAddress = async () => {
+      try {
+        const response = await axios.get('https://api.ipify.org?format=json');
+        return response.data.ip;
+      } catch (error) {
+        console.error('Error fetching IP address:', error);
+        return null;
+      }
+    };
+
+    // Function to get the user's location (latitude and longitude)
+    const getLocation = () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async (position) => {
+          const latitude = position.coords.latitude;
+          const longitude = position.coords.longitude;
+
+          // Display the latitude and longitude on the page
+          document.getElementById('latitude').textContent = latitude;
+          document.getElementById('longitude').textContent = longitude;
+
+          // Get the user's IP address
+          const ipAddress = await getIpAddress();
+          document.getElementById('ipAddress').textContent = ipAddress || 'Unable to fetch IP address';
+
+          // Send the location data (latitude, longitude, IP address) to the backend
+          sendLocationToServer(latitude, longitude, ipAddress);
+        }, (error) => {
+          console.log('Error fetching location:', error);
+          alert('Could not retrieve location. Please allow location access.');
+        });
+      } else {
+        alert('Geolocation is not supported by this browser.');
+      }
+    };
+
+    // Function to send location data to the backend (Express server)
+    const sendLocationToServer = (latitude, longitude, ipAddress) => {
+      const locationData = {
+        latitude: latitude,
+        longitude: longitude,
+        ipAddress: ipAddress,
+      };
+
+      axios.post('http://localhost:5000/api/locations/save-location', locationData)
+        .then(response => {
+          console.log('Location data sent successfully:', response.data);
+        })
+        .catch(error => {
+          console.error('Error sending location data:', error);
+        });
+    };
+
+    // Attach the event listener to the button
+    document.getElementById('getLocationBtn').addEventListener('click', getLocation);
+  </script>
+</body>
+</html>
